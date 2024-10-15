@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Random Picker</title>
+    <title>Fixed Spin the Wheel Random Picker</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: white;
             display: flex;
             justify-content: center;
@@ -16,62 +16,152 @@
         }
         .container {
             text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
         #result {
-            background-color: #f0f0f0;
-            border: 1px solid #ccc;
-            padding: 10px;
-            margin-bottom: 10px;
-            width: 200px;
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 20px;
         }
-        button {
-            background-color: #e6f7ff;
-            border: none;
-            padding: 10px 20px;
+        #wheel {
             cursor: pointer;
-            margin-bottom: 10px;
         }
         select {
             background-color: #f0f0f0;
             border: 1px solid #ccc;
             padding: 5px;
             width: 200px;
+            margin-top: 20px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <input type="text" id="result" readonly>
-        <br>
-        <button onclick="pickRandom()">Pick Random</button>
-        <br>
-        <select id="listSelector" onchange="updateList()">
+        <svg id="wheel" width="300" height="300" viewBox="0 0 300 300">
+            <g id="wheelGroup" transform="translate(150,150)">
+                <!-- Wheel segments will be added here dynamically -->
+            </g>
+            <circle cx="150" cy="150" r="10" fill="#333" />
+            <path d="M300 150 L280 145 L280 155 Z" fill="#333" /> <!-- Right Arrow -->
+        </svg>
+        <select id="listSelector" onchange="updateWheel()">
             <option value="good">Good</option>
             <option value="bad">Bad</option>
         </select>
+        <div id="result"></div> <!-- Result moved below and aligned -->
     </div>
 
     <script>
         const lists = {
-            good: ["Sunshine", "Laughter"],
-            bad: ["Rainy day", "Traffic"]
+            good: ["Sunshine", "Laughter", "Friends", "Music", "Books"],
+            bad: ["Rainy day", "Traffic", "Headache", "Mondays", "Bugs"]
         };
 
         let currentList = lists.good;
+        let isSpinning = false;
 
-        function updateList() {
+        function generateColors(count) {
+            const hueStep = 360 / count;
+            return Array.from({ length: count }, (_, i) => {
+                const hue = i * hueStep;
+                return `hsl(${hue}, 70%, 60%)`;
+            });
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function updateWheel() {
             const selector = document.getElementById("listSelector");
             currentList = lists[selector.value];
+            drawWheel();
         }
 
-        function pickRandom() {
-            const result = document.getElementById("result");
-            const randomIndex = Math.floor(Math.random() * currentList.length);
-            result.value = currentList[randomIndex];
+        function drawWheel() {
+            const wheel = document.getElementById('wheelGroup');
+            wheel.innerHTML = '';
+            const angleStep = 360 / currentList.length;
+
+            const colors = shuffleArray(generateColors(currentList.length));
+
+            currentList.forEach((item, index) => {
+                const startAngle = index * angleStep;
+                const endAngle = (index + 1) * angleStep;
+                const largeArcFlag = endAngle - startAngle <= 180 ? 0 : 1;
+
+                const startX = Math.cos(startAngle * Math.PI / 180) * 140;
+                const startY = Math.sin(startAngle * Math.PI / 180) * 140;
+                const endX = Math.cos(endAngle * Math.PI / 180) * 140;
+                const endY = Math.sin(endAngle * Math.PI / 180) * 140;
+
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                path.setAttribute("d", `M0 0 L${startX} ${startY} A140 140 0 ${largeArcFlag} 1 ${endX} ${endY} Z`);
+                path.setAttribute("fill", colors[index]);
+                wheel.appendChild(path);
+
+                const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                const textAngle = (startAngle + endAngle) / 2;
+                const textX = Math.cos(textAngle * Math.PI / 180) * 70;
+                const textY = Math.sin(textAngle * Math.PI / 180) * 70;
+                text.setAttribute("x", textX);
+                text.setAttribute("y", textY);
+                text.setAttribute("text-anchor", "middle");
+                text.setAttribute("dominant-baseline", "middle");
+                text.setAttribute("transform", `rotate(${textAngle + 90}, ${textX}, ${textY})`);
+                text.textContent = item;
+                wheel.appendChild(text);
+            });
         }
 
-        // Initialize the list
-        updateList();
+        function spinWheel() {
+            if (isSpinning) return;
+            isSpinning = true;
+
+            const wheel = document.getElementById('wheelGroup');
+            const result = document.getElementById('result');
+            result.textContent = ''; // Clear result before spinning
+
+            const minSpins = 5;
+            const maxSpins = 10;
+            const totalRotation = (minSpins + Math.random() * (maxSpins - minSpins)) * 360;
+            const duration = 5000 + Math.random() * 2000; // Random duration between 5 and 7 seconds
+            const start = performance.now();
+
+            function animate(time) {
+                const elapsed = time - start;
+                const progress = Math.min(elapsed / duration, 1);
+                const easeProgress = 1 - Math.pow(1 - progress, 3); // Cubic ease-out
+                const currentRotation = easeProgress * totalRotation;
+
+                wheel.setAttribute('transform', `translate(150,150) rotate(${currentRotation})`);
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    isSpinning = false;
+                    const finalAngle = totalRotation % 360;
+                    const segmentAngle = 360 / currentList.length;
+                    const winningIndex = Math.floor(finalAngle / segmentAngle);
+                    const selectedItem = currentList[(currentList.length - winningIndex - 1) % currentList.length];
+                    result.textContent = selectedItem; // Display result after spinning
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // Initialize the wheel
+        updateWheel();
+
+        // Add click event listener to the wheel
+        document.getElementById('wheel').addEventListener('click', spinWheel);
     </script>
 </body>
 </html>
