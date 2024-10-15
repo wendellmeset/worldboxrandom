@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Picker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+        }
+        #result {
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 10px;
+            width: 200px;
+        }
+        button {
+            background-color: #e6f7ff;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        select {
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            padding: 5px;
+            width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <input type="text" id="result" readonly>
+        <br>
+        <button onclick="pickRandom()">Pick Random</button>
+        <br>
+        <select id="listSelector" onchange="updateList()">
+            <option value="good">Good</option>
+            <option value="bad">Bad</option>
+        </select>
+    </div>
+
+    <script>
+        const lists = {
+            good: ["Sunshine", "Laughter"],
+            bad: ["Rainy day", "Traffic"]
+        };
+
+        let currentList = lists.good;
+
+        function updateList() {
+            const selector = document.getElementById("listSelector");
+            currentList = lists[selector.value];
+        }
+
+        function pickRandom() {
+            const result = document.getElementById("result");
+            const randomIndex = Math.floor(Math.random() * currentList.length);
+            result.value = currentList[randomIndex];
+        }
+
+        // Initialize the list
+        updateList();
+    </script>
+</body>
+</html>
